@@ -84,7 +84,7 @@ class User < ActiveRecord::Base
   end
   
   def expire
-    UserMailer.expire_email(self).deliver
+    ExpirationEmailWorker.perform_async(self.id)
     destroy
   end
   
