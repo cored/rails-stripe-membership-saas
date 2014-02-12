@@ -33,28 +33,10 @@ class User < ActiveRecord::Base
       if !stripe_token.present?
         raise "Stripe token not present. Can't create account."
       end
-      if coupon.blank?
-        customer = Stripe::Customer.create(
-          :email => email,
-          :description => name,
-          :card => stripe_token,
-          :plan => roles.first.name
-        )
-      else
-        customer = Stripe::Customer.create(
-          :email => email,
-          :description => name,
-          :card => stripe_token,
-          :plan => roles.first.name,
-          :coupon => coupon
-        )
-      end
+      CreateCustomerWorker.perform_async(id, stripe_token, coupon)
     else
       UpdateCustomerWorker.perform_async(id, stripe_token)
     end
-    self.last_4_digits = customer.cards.data.first["last4"]
-    self.customer_id = customer.id
-    self.stripe_token = nil
   rescue Stripe::StripeError => e
     logger.error "Stripe Error: " + e.message
     errors.add :base, "#{e.message}."

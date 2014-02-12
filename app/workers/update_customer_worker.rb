@@ -10,6 +10,6 @@ class UpdateCustomerWorker
       end
       customer.email = user.email
       customer.description = user.name
-      customer.save
+      customer.save!
   end
 end
