@@ -50,13 +50,7 @@ class User < ActiveRecord::Base
         )
       end
     else
-      customer = Stripe::Customer.retrieve(customer_id)
-      if stripe_token.present?
-        customer.card = stripe_token
-      end
-      customer.email = email
-      customer.description = name
-      customer.save
+      UpdateCustomerWorker.perform_async(id, stripe_token)
     end
     self.last_4_digits = customer.cards.data.first["last4"]
     self.customer_id = customer.id
@@ -70,12 +64,7 @@ class User < ActiveRecord::Base
   
   def cancel_subscription
     unless customer_id.nil?
-      customer = Stripe::Customer.retrieve(customer_id)
-      unless customer.nil? or customer.respond_to?('deleted')
-        if customer.subscription.status == 'active'
-          customer.cancel_subscription
-        end
-      end
+      CancelSubscriptionWorker.perform_async customer_id
     end
   rescue Stripe::StripeError => e
     logger.error "Stripe Error: " + e.message
