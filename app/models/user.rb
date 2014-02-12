@@ -16,8 +16,8 @@ class User < ActiveRecord::Base
     self.role_ids = []
     self.add_role(role.name)
     unless customer_id.nil?
-      customer = Stripe::Customer.retrieve(customer_id)
-      customer.update_subscription(:plan => role.name)
+      UpdateSubscriptionWorker.perform_async(customer_id:customer_id,
+                                             role_name:role.name)
     end
     true
   rescue Stripe::StripeError => e
