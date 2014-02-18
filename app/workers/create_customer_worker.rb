@@ -1,6 +1,7 @@
 class CreateCustomerWorker 
   include Sidekiq::Worker
 
+  attr_accessor :user, :customer
   def perform(user_id, stripe_token, coupon)
     @user = User.find(user_id)
     create_customer(stripe_token, coupon)
