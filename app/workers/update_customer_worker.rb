@@ -11,5 +11,7 @@ class UpdateCustomerWorker
       customer.email = user.email
       customer.description = user.name
       customer.save!
+
+      user.update_with_stripe_data(customer)
   end
 end

@@ -140,7 +140,7 @@ describe User do
     context "saving a User" do
       let(:user) do 
         User.new(email:"test@testing.com", 
-          stripe_token:12345, name: 'tester', password:'password')
+                 stripe_token:12345, name: 'tester', password:'password')
       end
 
       it "sends details to stripe" do
@@ -149,6 +149,26 @@ describe User do
         }.to change(CreateCustomerWorker.jobs, :size).by 1
       end
 
+    end
+  end
+
+  describe "#update_with_stripe_data" do 
+    before do 
+      @user = FactoryGirl.create(:user, email:"test@example.com")
+      @api_response = double(:api_response, cards: double(:cards, data: [ {"last4" => "4242"}]),id:"12345")
+      @user.update_with_stripe_data(@api_response)
+    end
+
+    it "keeps tracks of the 4 last digits on the credit card" do 
+      @user.last_4_digits.should == @api_response.cards.data.first["last4"] 
+    end
+
+    it "retains the ID Stripe uses" do 
+      @user.customer_id.should == @api_response.id
+    end
+    
+    it "throws away the stripe token" do 
+     @user.stripe_token.should be_nil
     end
   end
 end

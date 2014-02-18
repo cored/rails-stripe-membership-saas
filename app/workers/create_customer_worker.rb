@@ -13,16 +13,11 @@ class CreateCustomerWorker
                     description: @user.name, 
                     card: stripe_token, 
                     plan: @user.roles.first.name}
-    unless coupon.blank?
-      create_attrs.merge! coupon:coupon
-    end
+    create_attrs.merge!(coupon:coupon) unless coupon.blank?
     @customer = Stripe::Customer.create(create_attrs)
   end
 
   def update_user
-    @user.last_4_digits = @customer.cards.data.first["last4"]
-    @user.customer_id = @customer.id
-    @user.stripe_token = nil
-    @user.save!
+    @user.update_with_stripe_data(@customer)
   end
 end

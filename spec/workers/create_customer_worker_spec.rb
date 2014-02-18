@@ -21,10 +21,7 @@ describe CreateCustomerWorker do
   it 'saves the data it gets back from Stripe onto a User record' do 
     @create_customer_worker.user = @user
     @create_customer_worker.customer = @customer
-    @user.should_receive(:last_4_digits=)
-    @user.should_receive(:customer_id=)
-    @user.should_receive(:stripe_token=)
-    @user.should_receive(:save!)
+    @user.should_receive(:update_with_stripe_data).with(@customer)
     @create_customer_worker.update_user
   end
 

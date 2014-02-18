@@ -4,10 +4,10 @@ class User < ActiveRecord::Base
   # :token_authenticatable, :confirmable,
   # :lockable, :timeoutable and :omniauthable
   devise :database_authenticatable, :registerable,
-         :recoverable, :rememberable, :trackable, :validatable
+    :recoverable, :rememberable, :trackable, :validatable
 
   # Setup accessible (or protected) attributes for your model
-  attr_accessible :name, :email, :password, :password_confirmation, :remember_me, :stripe_token, :coupon
+  attr_accessible :name, :email, :password, :password_confirmation, :remember_me, :stripe_token, :coupon, :customer_id, :last_4_digits
   attr_accessor :stripe_token, :coupon
   before_save :update_stripe
   before_destroy :cancel_subscription
@@ -25,7 +25,7 @@ class User < ActiveRecord::Base
     errors.add :base, "Unable to update your subscription. #{e.message}."
     false
   end
-  
+
   def update_stripe
     return if email.include?(ENV['ADMIN_EMAIL'])
     return if email.include?('@example.com') and not Rails.env.production?
@@ -43,7 +43,7 @@ class User < ActiveRecord::Base
     self.stripe_token = nil
     false
   end
-  
+
   def cancel_subscription
     unless customer_id.nil?
       CancelSubscriptionWorker.perform_async customer_id
@@ -53,10 +53,18 @@ class User < ActiveRecord::Base
     errors.add :base, "Unable to cancel your subscription. #{e.message}."
     false
   end
-  
+
   def expire
     ExpirationEmailWorker.perform_async(self.id)
     destroy
   end
-  
+
+  def update_with_stripe_data(api_response)
+    update_attributes(
+      last_4_digits:api_response.cards.data.first["last4"],
+      customer_id: api_response.id,
+      stripe_token: nil 
+    )
+  end
+
 end
