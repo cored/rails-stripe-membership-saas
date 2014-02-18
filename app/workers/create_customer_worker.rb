@@ -4,10 +4,7 @@ class CreateCustomerWorker
   def perform(user_id, stripe_token, coupon)
     @user = User.find(user_id)
     create_customer(stripe_token, coupon)
-    @user.last_4_digits = @customer.cards.data.first["last4"]
-    @user.customer_id = @customer.id
-    @user.stripe_token = nil
-    @user.save!
+    update_user
   end
 
   def create_customer(stripe_token, coupon)
@@ -19,5 +16,12 @@ class CreateCustomerWorker
       create_attrs.merge! coupon:coupon
     end
     @customer = Stripe::Customer.create(create_attrs)
+  end
+
+  def update_user
+    @user.last_4_digits = @customer.cards.data.first["last4"]
+    @user.customer_id = @customer.id
+    @user.stripe_token = nil
+    @user.save!
   end
 end
